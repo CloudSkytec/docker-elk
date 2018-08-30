@@ -29,6 +29,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /:/host:ro
+    privileged: true
+    labels:
+      aliyun.global: true
     networks:
       - elk
     depends_on:
