@@ -1,6 +1,20 @@
-version: '2'
+version: '3'
 
 services:
+
+  pilot:
+    image: registry.cn-hangzhou.aliyuncs.com/acs-sample/log-pilot:latest
+    environment:
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      FLUENTD_OUTPUT: elasticsearch
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
 
   elasticsearch:
     build:
@@ -12,35 +26,12 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    labels:
+      aliyun.logs.catalina: stdout
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "tcp://192.168.59.129:514"
     networks:
       - elk
-
-  logstash:
-    build:
-      context: logstash/
-      args:
-        ELK_VERSION: $ELK_VERSION
-    volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
-    ports:
-      - "5000:5000"
-    environment:
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "tcp://192.168.59.129:514"
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
 
   kibana:
     build:
@@ -51,10 +42,6 @@ services:
       - ./kibana/config/:/usr/share/kibana/config:ro
     ports:
       - "5601:5601"
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "tcp://192.168.59.129:514"
     networks:
       - elk
     depends_on:
