@@ -2,20 +2,6 @@ version: '3'
 
 services:
 
-  pilot:
-    image: registry.cn-hangzhou.aliyuncs.com/acs-sample/log-pilot:latest
-    environment:
-      ELASTICSEARCH_HOST: elasticsearch
-      ELASTICSEARCH_PORT: 9200
-      FLUENTD_OUTPUT: elasticsearch
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /:/host
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
-
   elasticsearch:
     build:
       context: elasticsearch/
@@ -27,11 +13,26 @@ services:
       - "9200:9200"
       - "9300:9300"
     labels:
-      aliyun.logs.catalina: stdout
+      aliyun.logs.elasticsearch: stdout
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
       - elk
+
+  pilot:
+    image: registry.cn-hangzhou.aliyuncs.com/acs-sample/log-pilot:latest
+    environment:
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      LOGGING_OUTPUT: elasticsearch
+      PILOT_TYPE: fluentd
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host:ro
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
 
   kibana:
     build:
@@ -42,6 +43,8 @@ services:
       - ./kibana/config/:/usr/share/kibana/config:ro
     ports:
       - "5601:5601"
+    labels:
+      aliyun.logs.kibana: stdout
     networks:
       - elk
     depends_on:
